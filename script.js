@@ -1,18 +1,18 @@
 (function() {
-  // ---- 12 UNIQUE SOUND DEFINITIONS (5-10 seconds each) ----
+  // ---- 12 SONG DEFINITIONS (musical compositions) ----
   const soundDefinitions = [
-    { emoji: '🔔', label: 'Bell' },
-    { emoji: '🎵', label: 'Melody' },
-    { emoji: '💥', label: 'Explosion' },
-    { emoji: '🐱', label: 'Meow' },
-    { emoji: '🚀', label: 'Rocket' },
-    { emoji: '🎸', label: 'Guitar' },
-    { emoji: '📢', label: 'Announce' },
-    { emoji: '⏰', label: 'Alarm' },
-    { emoji: '🎯', label: 'Hit' },
-    { emoji: '🌊', label: 'Wave' },
-    { emoji: '🎹', label: 'Piano' },
-    { emoji: '⚡', label: 'Zap' }
+    { emoji: '🎵', label: 'Happy Melody' },
+    { emoji: '🎸', label: 'Rock Riff' },
+    { emoji: '🎹', label: 'Piano Solo' },
+    { emoji: '🎻', label: 'String Quartet' },
+    { emoji: '🎷', label: 'Jazz Sax' },
+    { emoji: '🥁', label: 'Drum Beat' },
+    { emoji: '🎺', label: 'Trumpet Fanfare' },
+    { emoji: '🎸', label: 'Acoustic Guitar' },
+    { emoji: '🎹', label: 'Synth Wave' },
+    { emoji: '🎻', label: 'Cello' },
+    { emoji: '🎵', label: 'Folk Tune' },
+    { emoji: '🎶', label: 'Ambient' }
   ];
 
   // ---- Web Audio setup ----
@@ -36,148 +36,256 @@
     return audioCtx;
   }
 
-  // ---- generate LONG audio buffers (5-10 seconds) ----
-  function generateSoundBuffer(soundId) {
+  // ---- Generate SONG-like audio (6-10 seconds) ----
+  function generateSongBuffer(songId) {
     const ctx = getAudioContext();
     const sampleRate = ctx.sampleRate;
-    // Random duration between 5-10 seconds
-    const duration = 5 + Math.random() * 5;
-    const buffer = ctx.createBuffer(1, sampleRate * duration, sampleRate);
-    const data = buffer.getChannelData(0);
+    // Fixed duration for each song (6-10 seconds)
+    const durations = [8, 7, 9, 8, 7, 6, 8, 9, 7, 8, 7, 9];
+    const duration = durations[songId] || 7;
+    const buffer = ctx.createBuffer(2, sampleRate * duration, sampleRate);
+    const left = buffer.getChannelData(0);
+    const right = buffer.getChannelData(1);
 
-    switch (soundId) {
-      case 0: // Bell: long ringing with harmonics
-        for (let i = 0; i < data.length; i++) {
+    // Musical note frequencies
+    const notes = [262, 294, 330, 349, 392, 440, 494, 523];
+    
+    switch (songId) {
+      case 0: // Happy Melody - upbeat pattern
+        for (let i = 0; i < left.length; i++) {
           let t = i / sampleRate;
-          let env = Math.exp(-t * 0.8);
-          data[i] = env * (0.5 * Math.sin(2 * Math.PI * 440 * t) + 
-                          0.3 * Math.sin(2 * Math.PI * 880 * t) + 
-                          0.15 * Math.sin(2 * Math.PI * 1320 * t) +
-                          0.05 * Math.sin(2 * Math.PI * 1760 * t));
+          let env = Math.exp(-t * 0.15) * 0.8;
+          let melody = 0;
+          // Play a simple melody
+          for (let n = 0; n < 4; n++) {
+            let noteIndex = (Math.floor(t * 2) + n) % notes.length;
+            let freq = notes[noteIndex];
+            let noteDuration = 0.5;
+            let notePhase = (t % noteDuration) / noteDuration;
+            if (notePhase < 0.5) {
+              melody += 0.25 * Math.sin(2 * Math.PI * freq * t + n);
+            }
+          }
+          let harmony = 0.3 * Math.sin(2 * Math.PI * 392 * t) + 0.2 * Math.sin(2 * Math.PI * 523 * t);
+          left[i] = env * (melody + harmony * 0.5);
+          right[i] = left[i] * 0.9;
         }
         break;
-        
-      case 1: // Melody: rising and falling pattern
-        for (let i = 0; i < data.length; i++) {
+
+      case 1: // Rock Riff - distorted guitar style
+        for (let i = 0; i < left.length; i++) {
           let t = i / sampleRate;
-          let env = Math.sin(Math.PI * t / duration) * 0.8;
-          let freq = 440 + 200 * Math.sin(2 * Math.PI * 0.5 * t);
-          data[i] = env * 0.6 * Math.sin(2 * Math.PI * freq * t);
+          let env = Math.exp(-t * 0.12) * 0.9;
+          let riff = 0;
+          let freq = 196 + 40 * Math.sin(2 * Math.PI * 0.8 * t);
+          // Distortion effect
+          let clean = Math.sin(2 * Math.PI * freq * t);
+          let distorted = Math.tanh(clean * 3) * 0.7;
+          let rhythm = 0.5 + 0.5 * Math.sin(2 * Math.PI * 2 * t);
+          riff = distorted * rhythm;
+          left[i] = env * riff;
+          right[i] = left[i] * 0.85;
         }
         break;
-        
-      case 2: // Explosion: noise with long decay
-        for (let i = 0; i < data.length; i++) {
+
+      case 2: // Piano Solo - classical style
+        for (let i = 0; i < left.length; i++) {
           let t = i / sampleRate;
-          let env = Math.exp(-t * 1.2);
-          data[i] = env * (Math.random() * 2 - 1) * 0.9;
+          let env = Math.exp(-t * 0.1) * 0.7;
+          let melody = 0;
+          let pattern = [0, 2, 4, 5, 4, 2, 0];
+          for (let n = 0; n < pattern.length; n++) {
+            let noteIndex = pattern[n];
+            let freq = notes[noteIndex + 2];
+            let noteStart = n * 0.8;
+            if (t > noteStart && t < noteStart + 0.7) {
+              let noteEnv = Math.exp(-(t - noteStart) * 6);
+              melody += 0.2 * noteEnv * Math.sin(2 * Math.PI * freq * (t - noteStart));
+            }
+          }
+          let bass = 0.15 * Math.sin(2 * Math.PI * 131 * t) * Math.exp(-t * 0.1);
+          left[i] = env * (melody + bass);
+          right[i] = left[i] * 0.9;
         }
         break;
-        
-      case 3: // Meow: pitch bend up and down
-        for (let i = 0; i < data.length; i++) {
+
+      case 3: // String Quartet - rich harmonies
+        for (let i = 0; i < left.length; i++) {
           let t = i / sampleRate;
-          let env = Math.sin(Math.PI * t / duration) * 0.8;
-          let freq = 300 + 500 * Math.sin(2 * Math.PI * 0.3 * t);
-          data[i] = env * 0.5 * Math.sin(2 * Math.PI * freq * t);
+          let env = Math.exp(-t * 0.08) * 0.8;
+          let chord = 0;
+          let freqs = [262, 330, 392, 523];
+          for (let f of freqs) {
+            chord += 0.15 * Math.sin(2 * Math.PI * f * t);
+          }
+          // Add vibrato
+          let vibrato = 1 + 0.02 * Math.sin(2 * Math.PI * 5 * t);
+          left[i] = env * chord * vibrato;
+          right[i] = left[i] * 0.95;
         }
         break;
-        
-      case 4: // Rocket: ascending with noise
-        for (let i = 0; i < data.length; i++) {
+
+      case 4: // Jazz Sax - smooth jazz
+        for (let i = 0; i < left.length; i++) {
           let t = i / sampleRate;
-          let env = Math.exp(-t * 0.5);
-          let freq = 80 + 600 * (t / duration);
-          let tone = 0.5 * Math.sin(2 * Math.PI * freq * t);
-          let noise = 0.3 * (Math.random() * 2 - 1) * env;
-          data[i] = env * (tone + noise);
+          let env = Math.exp(-t * 0.09) * 0.8;
+          let freq = 294 + 30 * Math.sin(2 * Math.PI * 0.7 * t);
+          let tone = Math.sin(2 * Math.PI * freq * t);
+          // Add harmonic overtones for sax-like sound
+          let overtone1 = 0.3 * Math.sin(2 * Math.PI * freq * 2 * t);
+          let overtone2 = 0.15 * Math.sin(2 * Math.PI * freq * 3 * t);
+          let sax = tone + overtone1 + overtone2;
+          // Amplitude modulation
+          let am = 0.8 + 0.2 * Math.sin(2 * Math.PI * 2.5 * t);
+          left[i] = env * sax * am;
+          right[i] = left[i] * 0.9;
         }
         break;
-        
-      case 5: // Guitar: pluck with harmonics
-        for (let i = 0; i < data.length; i++) {
+
+      case 5: // Drum Beat - rhythm pattern
+        for (let i = 0; i < left.length; i++) {
           let t = i / sampleRate;
-          let env = Math.exp(-t * 0.7);
-          let sum = 0;
+          let beat = 0;
+          // Kick drum on 1 and 3
+          if (Math.floor(t * 2) % 2 === 0) {
+            let kickEnv = Math.exp(-(t % 0.5) * 20);
+            beat += 0.6 * kickEnv * (Math.random() * 0.2 + 0.8);
+          }
+          // Snare on 2 and 4
+          if (Math.floor(t * 2) % 2 === 1) {
+            let snareEnv = Math.exp(-(t % 0.5) * 15);
+            beat += 0.4 * snareEnv * (Math.random() * 0.3 + 0.7);
+          }
+          // Hi-hat
+          let hat = 0.15 * (Math.random() * 2 - 1) * Math.exp(-(t % 0.25) * 30);
+          left[i] = beat + hat;
+          right[i] = left[i] * 0.95;
+        }
+        break;
+
+      case 6: // Trumpet Fanfare - bold and bright
+        for (let i = 0; i < left.length; i++) {
+          let t = i / sampleRate;
+          let env = Math.exp(-t * 0.07) * 0.9;
+          let melody = 0;
+          let fanfare = [0, 4, 7, 4, 0, 4, 7, 4];
+          for (let n = 0; n < fanfare.length; n++) {
+            let noteIndex = fanfare[n];
+            let freq = notes[noteIndex + 1];
+            let noteStart = n * 0.7;
+            if (t > noteStart && t < noteStart + 0.6) {
+              let noteEnv = Math.exp(-(t - noteStart) * 5);
+              // Add brightness with overtones
+              let fundamental = Math.sin(2 * Math.PI * freq * (t - noteStart));
+              let overtone = 0.3 * Math.sin(2 * Math.PI * freq * 2 * (t - noteStart));
+              melody += 0.3 * noteEnv * (fundamental + overtone);
+            }
+          }
+          left[i] = env * melody;
+          right[i] = left[i] * 0.9;
+        }
+        break;
+
+      case 7: // Acoustic Guitar - fingerpicking
+        for (let i = 0; i < left.length; i++) {
+          let t = i / sampleRate;
+          let env = Math.exp(-t * 0.08) * 0.8;
+          let strum = 0;
+          let strings = [196, 247, 294, 392, 494, 659];
+          for (let s = 0; s < strings.length; s++) {
+            let strumTime = s * 0.15;
+            if (t > strumTime && t < strumTime + 0.2) {
+              let decay = Math.exp(-(t - strumTime) * 10);
+              strum += 0.1 * decay * Math.sin(2 * Math.PI * strings[s] * (t - strumTime));
+            }
+          }
+          left[i] = env * strum;
+          right[i] = left[i] * 0.85;
+        }
+        break;
+
+      case 8: // Synth Wave - electronic
+        for (let i = 0; i < left.length; i++) {
+          let t = i / sampleRate;
+          let env = Math.exp(-t * 0.1) * 0.8;
+          let freq = 330 + 80 * Math.sin(2 * Math.PI * 0.3 * t);
+          // Sawtooth-like wave
+          let saw = 0;
+          for (let h = 1; h <= 8; h++) {
+            saw += (1 / h) * Math.sin(2 * Math.PI * freq * h * t);
+          }
+          // LFO modulation
+          let lfo = 0.5 + 0.5 * Math.sin(2 * Math.PI * 0.5 * t);
+          left[i] = env * saw * 0.4 * lfo;
+          right[i] = left[i] * 0.9;
+        }
+        break;
+
+      case 9: // Cello - deep and rich
+        for (let i = 0; i < left.length; i++) {
+          let t = i / sampleRate;
+          let env = Math.exp(-t * 0.06) * 0.8;
+          let freq = 131;
+          let tone = 0;
           for (let h = 1; h <= 6; h++) {
-            sum += (1 / h) * Math.sin(2 * Math.PI * (110 * h) * t);
+            tone += (1 / (h * 1.2)) * Math.sin(2 * Math.PI * freq * h * t);
           }
-          data[i] = env * 0.3 * sum;
+          // Add vibrato
+          let vibrato = 1 + 0.015 * Math.sin(2 * Math.PI * 4 * t);
+          left[i] = env * tone * 0.5 * vibrato;
+          right[i] = left[i] * 0.95;
         }
         break;
-        
-      case 6: // Announce: speech-like modulation
-        for (let i = 0; i < data.length; i++) {
+
+      case 10: // Folk Tune - simple and melodic
+        for (let i = 0; i < left.length; i++) {
           let t = i / sampleRate;
-          let env = Math.sin(Math.PI * t / duration) * 0.9;
-          let formant = Math.sin(2 * Math.PI * 350 * t) + 0.5 * Math.sin(2 * Math.PI * 800 * t);
-          let modulation = 0.5 + 0.5 * Math.sin(2 * Math.PI * 2 * t);
-          data[i] = env * 0.4 * formant * modulation;
-        }
-        break;
-        
-      case 7: // Alarm: pulsing square wave
-        for (let i = 0; i < data.length; i++) {
-          let t = i / sampleRate;
-          let env = Math.exp(-t * 0.3);
-          let pulse = Math.sin(2 * Math.PI * 200 * t) > 0 ? 0.8 : -0.8;
-          let amplitude = 0.5 + 0.5 * Math.sin(2 * Math.PI * 1.5 * t);
-          data[i] = env * 0.6 * pulse * amplitude;
-        }
-        break;
-        
-      case 8: // Hit: impact with long tail
-        for (let i = 0; i < data.length; i++) {
-          let t = i / sampleRate;
-          let env = Math.exp(-t * 0.9);
-          let noise = (Math.random() * 2 - 1) * 0.5;
-          let tone = 0.3 * Math.sin(2 * Math.PI * 600 * t) * Math.exp(-t * 1.5);
-          data[i] = env * (noise + tone);
-        }
-        break;
-        
-      case 9: // Wave: sweeping filter effect
-        for (let i = 0; i < data.length; i++) {
-          let t = i / sampleRate;
-          let env = Math.sin(Math.PI * t / duration) * 0.8;
-          let freq = 150 + 600 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 0.8 * t));
-          data[i] = env * 0.5 * Math.sin(2 * Math.PI * freq * t);
-        }
-        break;
-        
-      case 10: // Piano: rich harmonic decay
-        for (let i = 0; i < data.length; i++) {
-          let t = i / sampleRate;
-          let env = Math.exp(-t * 0.6);
-          let sum = 0;
-          for (let h = 1; h <= 5; h++) {
-            sum += (1 / h) * Math.sin(2 * Math.PI * (220 * h) * t);
+          let env = Math.exp(-t * 0.09) * 0.8;
+          let melody = 0;
+          let tune = [0, 2, 4, 5, 4, 2, 0, -2, 0, 2, 4, 5];
+          for (let n = 0; n < tune.length; n++) {
+            let noteIndex = tune[n] + 4;
+            if (noteIndex >= 0 && noteIndex < notes.length) {
+              let freq = notes[noteIndex];
+              let noteStart = n * 0.5;
+              if (t > noteStart && t < noteStart + 0.45) {
+                let noteEnv = Math.exp(-(t - noteStart) * 8);
+                melody += 0.2 * noteEnv * Math.sin(2 * Math.PI * freq * (t - noteStart));
+              }
+            }
           }
-          data[i] = env * 0.4 * sum;
+          left[i] = env * melody;
+          right[i] = left[i] * 0.9;
         }
         break;
-        
-      case 11: // Zap: descending glitch
-        for (let i = 0; i < data.length; i++) {
+
+      case 11: // Ambient - atmospheric
+        for (let i = 0; i < left.length; i++) {
           let t = i / sampleRate;
-          let env = Math.exp(-t * 0.8);
-          let freq = 1500 - 1000 * (t / duration);
-          let noise = (Math.random() * 2 - 1) * 0.2;
-          let tone = 0.5 * Math.sin(2 * Math.PI * freq * t);
-          data[i] = env * (tone + noise);
+          let env = Math.exp(-t * 0.03) * 0.7;
+          let pad = 0;
+          let freqs = [196, 247, 330, 440];
+          for (let f of freqs) {
+            pad += 0.15 * Math.sin(2 * Math.PI * f * t + 0.5 * Math.sin(2 * Math.PI * 0.2 * t));
+          }
+          // Add evolving texture
+          let texture = 0.1 * (Math.random() * 2 - 1) * Math.exp(-t * 0.5);
+          left[i] = env * (pad + texture);
+          right[i] = left[i] * 0.95;
         }
         break;
-        
+
       default:
-        for (let i = 0; i < data.length; i++) {
+        for (let i = 0; i < left.length; i++) {
           let t = i / sampleRate;
-          data[i] = 0.5 * Math.sin(2 * Math.PI * 440 * t) * Math.exp(-t * 0.5);
+          left[i] = 0.3 * Math.sin(2 * Math.PI * 440 * t) * Math.exp(-t * 0.1);
+          right[i] = left[i];
         }
     }
     return buffer;
   }
 
-  // ---- Sound class for individual control ----
+  // ---- Sound class with FIXED pause ----
   class SoundInstance {
     constructor(index) {
       this.index = index;
@@ -198,7 +306,7 @@
     }
 
     generateBuffer() {
-      this.buffer = generateSoundBuffer(this.index);
+      this.buffer = generateSongBuffer(this.index);
     }
 
     setUI(card, progressFill, playBtn, pauseBtn, stopBtn) {
@@ -214,45 +322,60 @@
       const ctx = getAudioContext();
       if (!ctx || !this.buffer) return;
 
-      // If paused, resume from where we left off
+      // If we have a paused source, resume it
       if (this.isPaused && this.source) {
-        this.source.start(0, this.pausedTime);
+        // The source is still connected but stopped, we need to create a new one
+        // because Web Audio sources can only be started once
+        const oldSource = this.source;
+        oldSource.disconnect();
+        this.source = null;
         this.isPaused = false;
-        this.isPlaying = true;
-        this.startTime = ctx.currentTime - this.pausedTime;
-        this.updateButtons();
-        this.startProgressUpdate();
-        this.card.classList.add('playing');
-        return;
+        // Now fall through to create a new source from the paused position
       }
 
-      // Stop any existing playback
-      this.stop();
+      // If we already have a playing source, stop it first
+      if (this.source && this.isPlaying) {
+        this.stop();
+      }
 
+      // Create new source
       this.source = ctx.createBufferSource();
       this.source.buffer = this.buffer;
       this.source.connect(masterGain);
       
-      this.startTime = ctx.currentTime;
-      this.pausedTime = 0;
+      // Start from paused position or beginning
+      const startOffset = this.pausedTime || 0;
+      this.startTime = ctx.currentTime - startOffset;
       this.isPlaying = true;
       this.isPaused = false;
 
-      this.source.onended = () => {
-        this.isPlaying = false;
-        this.isPaused = false;
-        this.updateButtons();
-        this.stopProgressUpdate();
-        this.card.classList.remove('playing');
-        if (this.progressFill) {
-          this.progressFill.style.width = '100%';
+      // Store reference for cleanup
+      const self = this;
+      this.source.onended = function() {
+        // Only reset if it's not paused (paused will have its own handler)
+        if (!self.isPaused) {
+          self.isPlaying = false;
+          self.pausedTime = 0;
+          self.updateButtons();
+          self.stopProgressUpdate();
+          self.card.classList.remove('playing');
+          if (self.progressFill) {
+            self.progressFill.style.width = '100%';
+          }
         }
       };
 
-      this.source.start(0);
-      this.updateButtons();
-      this.startProgressUpdate();
-      this.card.classList.add('playing');
+      try {
+        this.source.start(0, startOffset);
+        this.updateButtons();
+        this.startProgressUpdate();
+        this.card.classList.add('playing');
+      } catch (e) {
+        console.error('Error playing sound:', e);
+        this.isPlaying = false;
+        this.isPaused = false;
+        this.updateButtons();
+      }
     }
 
     pause() {
@@ -260,15 +383,27 @@
       const ctx = getAudioContext();
       if (!ctx || !this.source) return;
 
+      // Calculate elapsed time
       this.pausedTime = ctx.currentTime - this.startTime;
-      this.source.stop();
-      this.source.disconnect();
+      
+      // Stop the source
+      try {
+        this.source.stop();
+        this.source.disconnect();
+      } catch (_) {}
       this.source = null;
+      
       this.isPlaying = false;
       this.isPaused = true;
       this.updateButtons();
       this.stopProgressUpdate();
       this.card.classList.remove('playing');
+      
+      // Keep progress bar at current position
+      const percent = (this.pausedTime / this.buffer.duration) * 100;
+      if (this.progressFill) {
+        this.progressFill.style.width = Math.min(percent, 100) + '%';
+      }
     }
 
     stop() {
@@ -299,6 +434,7 @@
       
       this.playBtn.classList.toggle('active', this.isPaused);
       this.pauseBtn.classList.toggle('active', this.isPlaying && !this.isPaused);
+      this.stopBtn.classList.toggle('active', this.isPlaying || this.isPaused);
     }
 
     startProgressUpdate() {
@@ -307,7 +443,10 @@
     }
 
     updateProgress() {
-      if (!this.isPlaying || this.isPaused) return;
+      if (!this.isPlaying || this.isPaused) {
+        this.stopProgressUpdate();
+        return;
+      }
       const ctx = getAudioContext();
       if (!ctx) return;
       
@@ -323,6 +462,14 @@
         this.animationFrame = requestAnimationFrame(() => this.updateProgress());
       } else {
         this.stopProgressUpdate();
+        // Ensure it reaches 100%
+        if (this.progressFill) {
+          this.progressFill.style.width = '100%';
+        }
+        this.isPlaying = false;
+        this.pausedTime = 0;
+        this.updateButtons();
+        this.card.classList.remove('playing');
       }
     }
 
@@ -369,16 +516,19 @@
 
       sound.setUI(card, progressFill, playBtn, pauseBtn, stopBtn);
 
-      playBtn.addEventListener('click', () => {
+      playBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         getAudioContext();
         sound.play();
       });
 
-      pauseBtn.addEventListener('click', () => {
+      pauseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         sound.pause();
       });
 
-      stopBtn.addEventListener('click', () => {
+      stopBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         sound.stop();
       });
 
@@ -409,6 +559,7 @@
 
     document.getElementById('stopAllBtn').addEventListener('click', stopAllSounds);
 
+    // Resume audio context on any click
     document.querySelector('.soundboard').addEventListener('click', () => {
       if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume();
