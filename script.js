@@ -1,7 +1,5 @@
 (function() {
-  // ---- SOUND DEFINITIONS (12 unique sounds) ----
-  // Each sound: emoji + label, and a function that returns an AudioBuffer
-  // using Web Audio oscillator + noise or simple waveform variations.
+  // ---- 12 UNIQUE SOUND DEFINITIONS (5-10 seconds each) ----
   const soundDefinitions = [
     { emoji: '🔔', label: 'Bell' },
     { emoji: '🎵', label: 'Melody' },
@@ -19,13 +17,12 @@
 
   // ---- Web Audio setup ----
   let audioCtx = null;
-  // Store active sources so we can stop them
-  const activeSources = new Set();
-
-  // Master gain node (volume control)
   let masterGain = null;
 
-  // ----- helper: ensure audio context is running -----
+  // Store all sound instances
+  const soundInstances = [];
+
+  // ---- helper: get audio context ----
   function getAudioContext() {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -39,203 +36,366 @@
     return audioCtx;
   }
 
-  // ----- generate audio buffers for each sound (unique) -----
+  // ---- generate LONG audio buffers (5-10 seconds) ----
   function generateSoundBuffer(soundId) {
     const ctx = getAudioContext();
     const sampleRate = ctx.sampleRate;
-    const duration = 0.6; // seconds
-
-    // Each sound uses a different waveform / effect
-    let buffer = ctx.createBuffer(1, sampleRate * duration, sampleRate);
-    let data = buffer.getChannelData(0);
+    // Random duration between 5-10 seconds
+    const duration = 5 + Math.random() * 5;
+    const buffer = ctx.createBuffer(1, sampleRate * duration, sampleRate);
+    const data = buffer.getChannelData(0);
 
     switch (soundId) {
-      case 0: // Bell: sine + harmonics
+      case 0: // Bell: long ringing with harmonics
         for (let i = 0; i < data.length; i++) {
           let t = i / sampleRate;
-          let env = Math.exp(-t * 3);
-          data[i] = env * (0.6 * Math.sin(2 * Math.PI * 440 * t) + 0.3 * Math.sin(2 * Math.PI * 880 * t) + 0.1 * Math.sin(2 * Math.PI * 1320 * t));
+          let env = Math.exp(-t * 0.8);
+          data[i] = env * (0.5 * Math.sin(2 * Math.PI * 440 * t) + 
+                          0.3 * Math.sin(2 * Math.PI * 880 * t) + 
+                          0.15 * Math.sin(2 * Math.PI * 1320 * t) +
+                          0.05 * Math.sin(2 * Math.PI * 1760 * t));
         }
         break;
-      case 1: // Melody: sequence of tones (simple)
+        
+      case 1: // Melody: rising and falling pattern
         for (let i = 0; i < data.length; i++) {
           let t = i / sampleRate;
-          let freq = 440 + 150 * Math.sin(2 * Math.PI * 2 * t); // frequency wobble
-          let env = Math.exp(-t * 2.5);
-          data[i] = env * 0.7 * Math.sin(2 * Math.PI * freq * t);
-        }
-        break;
-      case 2: // Explosion: noise burst with decay
-        for (let i = 0; i < data.length; i++) {
-          let t = i / sampleRate;
-          let env = Math.exp(-t * 8);
-          data[i] = env * (Math.random() * 2 - 1) * 0.9;
-        }
-        break;
-      case 3: // Meow: pitch glide
-        for (let i = 0; i < data.length; i++) {
-          let t = i / sampleRate;
-          let freq = 300 + 400 * t; // rising
           let env = Math.sin(Math.PI * t / duration) * 0.8;
+          let freq = 440 + 200 * Math.sin(2 * Math.PI * 0.5 * t);
           data[i] = env * 0.6 * Math.sin(2 * Math.PI * freq * t);
         }
         break;
-      case 4: // Rocket: ascending tone + noise
+        
+      case 2: // Explosion: noise with long decay
         for (let i = 0; i < data.length; i++) {
           let t = i / sampleRate;
-          let freq = 80 + 600 * t;
-          let env = Math.exp(-t * 1.5);
+          let env = Math.exp(-t * 1.2);
+          data[i] = env * (Math.random() * 2 - 1) * 0.9;
+        }
+        break;
+        
+      case 3: // Meow: pitch bend up and down
+        for (let i = 0; i < data.length; i++) {
+          let t = i / sampleRate;
+          let env = Math.sin(Math.PI * t / duration) * 0.8;
+          let freq = 300 + 500 * Math.sin(2 * Math.PI * 0.3 * t);
+          data[i] = env * 0.5 * Math.sin(2 * Math.PI * freq * t);
+        }
+        break;
+        
+      case 4: // Rocket: ascending with noise
+        for (let i = 0; i < data.length; i++) {
+          let t = i / sampleRate;
+          let env = Math.exp(-t * 0.5);
+          let freq = 80 + 600 * (t / duration);
           let tone = 0.5 * Math.sin(2 * Math.PI * freq * t);
-          let noise = 0.3 * (Math.random() * 2 - 1) * (1 - t / duration);
+          let noise = 0.3 * (Math.random() * 2 - 1) * env;
           data[i] = env * (tone + noise);
         }
         break;
-      case 5: // Guitar: pluck (decaying harmonics)
+        
+      case 5: // Guitar: pluck with harmonics
         for (let i = 0; i < data.length; i++) {
           let t = i / sampleRate;
-          let env = Math.exp(-t * 4);
+          let env = Math.exp(-t * 0.7);
+          let sum = 0;
+          for (let h = 1; h <= 6; h++) {
+            sum += (1 / h) * Math.sin(2 * Math.PI * (110 * h) * t);
+          }
+          data[i] = env * 0.3 * sum;
+        }
+        break;
+        
+      case 6: // Announce: speech-like modulation
+        for (let i = 0; i < data.length; i++) {
+          let t = i / sampleRate;
+          let env = Math.sin(Math.PI * t / duration) * 0.9;
+          let formant = Math.sin(2 * Math.PI * 350 * t) + 0.5 * Math.sin(2 * Math.PI * 800 * t);
+          let modulation = 0.5 + 0.5 * Math.sin(2 * Math.PI * 2 * t);
+          data[i] = env * 0.4 * formant * modulation;
+        }
+        break;
+        
+      case 7: // Alarm: pulsing square wave
+        for (let i = 0; i < data.length; i++) {
+          let t = i / sampleRate;
+          let env = Math.exp(-t * 0.3);
+          let pulse = Math.sin(2 * Math.PI * 200 * t) > 0 ? 0.8 : -0.8;
+          let amplitude = 0.5 + 0.5 * Math.sin(2 * Math.PI * 1.5 * t);
+          data[i] = env * 0.6 * pulse * amplitude;
+        }
+        break;
+        
+      case 8: // Hit: impact with long tail
+        for (let i = 0; i < data.length; i++) {
+          let t = i / sampleRate;
+          let env = Math.exp(-t * 0.9);
+          let noise = (Math.random() * 2 - 1) * 0.5;
+          let tone = 0.3 * Math.sin(2 * Math.PI * 600 * t) * Math.exp(-t * 1.5);
+          data[i] = env * (noise + tone);
+        }
+        break;
+        
+      case 9: // Wave: sweeping filter effect
+        for (let i = 0; i < data.length; i++) {
+          let t = i / sampleRate;
+          let env = Math.sin(Math.PI * t / duration) * 0.8;
+          let freq = 150 + 600 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 0.8 * t));
+          data[i] = env * 0.5 * Math.sin(2 * Math.PI * freq * t);
+        }
+        break;
+        
+      case 10: // Piano: rich harmonic decay
+        for (let i = 0; i < data.length; i++) {
+          let t = i / sampleRate;
+          let env = Math.exp(-t * 0.6);
           let sum = 0;
           for (let h = 1; h <= 5; h++) {
-            sum += (1 / h) * Math.sin(2 * Math.PI * (110 * h) * t);
+            sum += (1 / h) * Math.sin(2 * Math.PI * (220 * h) * t);
           }
           data[i] = env * 0.4 * sum;
         }
         break;
-      case 6: // Announce: speech-like buzz
+        
+      case 11: // Zap: descending glitch
         for (let i = 0; i < data.length; i++) {
           let t = i / sampleRate;
-          let env = Math.sin(Math.PI * t / duration) * 0.9;
-          let formant = Math.sin(2 * Math.PI * 300 * t) + 0.5 * Math.sin(2 * Math.PI * 700 * t);
-          data[i] = env * 0.5 * formant * (0.5 + 0.5 * Math.sin(2 * Math.PI * 80 * t));
-        }
-        break;
-      case 7: // Alarm: square-like pulsing
-        for (let i = 0; i < data.length; i++) {
-          let t = i / sampleRate;
-          let env = Math.exp(-t * 1.8);
-          let pulse = Math.sin(2 * Math.PI * 180 * t) > 0 ? 0.8 : -0.8;
-          data[i] = env * 0.7 * pulse;
-        }
-        break;
-      case 8: // Hit: short impact (noise + tone)
-        for (let i = 0; i < data.length; i++) {
-          let t = i / sampleRate;
-          let env = Math.exp(-t * 12);
-          let noise = (Math.random() * 2 - 1) * 0.6;
-          let tone = 0.4 * Math.sin(2 * Math.PI * 800 * t);
-          data[i] = env * (noise + tone);
-        }
-        break;
-      case 9: // Wave: sweeping filter (modulated)
-        for (let i = 0; i < data.length; i++) {
-          let t = i / sampleRate;
-          let env = Math.sin(Math.PI * t / duration) * 0.8;
-          let freq = 200 + 500 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 2 * t));
-          data[i] = env * 0.5 * Math.sin(2 * Math.PI * freq * t);
-        }
-        break;
-      case 10: // Piano: decaying harmonic rich
-        for (let i = 0; i < data.length; i++) {
-          let t = i / sampleRate;
-          let env = Math.exp(-t * 2.2);
-          let sum = 0;
-          for (let h = 1; h <= 4; h++) {
-            sum += (1 / h) * Math.sin(2 * Math.PI * (220 * h) * t);
-          }
-          data[i] = env * 0.5 * sum;
-        }
-        break;
-      case 11: // Zap: fast descending glitch
-        for (let i = 0; i < data.length; i++) {
-          let t = i / sampleRate;
-          let env = Math.exp(-t * 7);
-          let freq = 1200 - 800 * (t / duration);
-          let noise = (Math.random() * 2 - 1) * 0.3;
-          let tone = 0.6 * Math.sin(2 * Math.PI * freq * t);
+          let env = Math.exp(-t * 0.8);
+          let freq = 1500 - 1000 * (t / duration);
+          let noise = (Math.random() * 2 - 1) * 0.2;
+          let tone = 0.5 * Math.sin(2 * Math.PI * freq * t);
           data[i] = env * (tone + noise);
         }
         break;
+        
       default:
-        // fallback: simple sine
         for (let i = 0; i < data.length; i++) {
           let t = i / sampleRate;
-          data[i] = 0.5 * Math.sin(2 * Math.PI * 440 * t) * Math.exp(-t * 2);
+          data[i] = 0.5 * Math.sin(2 * Math.PI * 440 * t) * Math.exp(-t * 0.5);
         }
     }
     return buffer;
   }
 
-  // ---- play a sound by index ----
-  function playSound(index) {
-    const ctx = getAudioContext();
-    if (!ctx) return;
-
-    // generate buffer for this sound
-    const buffer = generateSoundBuffer(index);
-    if (!buffer) return;
-
-    // create source
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-
-    // connect to master gain
-    source.connect(masterGain);
-
-    // store source for stop-all
-    activeSources.add(source);
-
-    // when sound ends, remove from active set
-    source.onended = () => {
-      activeSources.delete(source);
-      // remove playing style
-      const btn = document.querySelector(`.sound-btn[data-index="${index}"]`);
-      if (btn) btn.classList.remove('playing');
-    };
-
-    // start playback
-    source.start(0);
-
-    // visual feedback
-    const btn = document.querySelector(`.sound-btn[data-index="${index}"]`);
-    if (btn) btn.classList.add('playing');
-  }
-
-  // ---- stop all sounds ----
-  function stopAllSounds() {
-    for (const source of activeSources) {
-      try {
-        source.stop();
-      } catch (_) { /* ignore */ }
-      activeSources.delete(source);
+  // ---- Sound class for individual control ----
+  class SoundInstance {
+    constructor(index) {
+      this.index = index;
+      this.buffer = null;
+      this.source = null;
+      this.startTime = 0;
+      this.pausedTime = 0;
+      this.isPlaying = false;
+      this.isPaused = false;
+      this.animationFrame = null;
+      this.card = null;
+      this.progressFill = null;
+      this.playBtn = null;
+      this.pauseBtn = null;
+      this.stopBtn = null;
+      
+      this.generateBuffer();
     }
-    // clear any leftover
-    activeSources.clear();
-    // remove playing class from all buttons
-    document.querySelectorAll('.sound-btn').forEach(btn => btn.classList.remove('playing'));
+
+    generateBuffer() {
+      this.buffer = generateSoundBuffer(this.index);
+    }
+
+    setUI(card, progressFill, playBtn, pauseBtn, stopBtn) {
+      this.card = card;
+      this.progressFill = progressFill;
+      this.playBtn = playBtn;
+      this.pauseBtn = pauseBtn;
+      this.stopBtn = stopBtn;
+      this.updateButtons();
+    }
+
+    play() {
+      const ctx = getAudioContext();
+      if (!ctx || !this.buffer) return;
+
+      // If paused, resume from where we left off
+      if (this.isPaused && this.source) {
+        this.source.start(0, this.pausedTime);
+        this.isPaused = false;
+        this.isPlaying = true;
+        this.startTime = ctx.currentTime - this.pausedTime;
+        this.updateButtons();
+        this.startProgressUpdate();
+        this.card.classList.add('playing');
+        return;
+      }
+
+      // Stop any existing playback
+      this.stop();
+
+      this.source = ctx.createBufferSource();
+      this.source.buffer = this.buffer;
+      this.source.connect(masterGain);
+      
+      this.startTime = ctx.currentTime;
+      this.pausedTime = 0;
+      this.isPlaying = true;
+      this.isPaused = false;
+
+      this.source.onended = () => {
+        this.isPlaying = false;
+        this.isPaused = false;
+        this.updateButtons();
+        this.stopProgressUpdate();
+        this.card.classList.remove('playing');
+        if (this.progressFill) {
+          this.progressFill.style.width = '100%';
+        }
+      };
+
+      this.source.start(0);
+      this.updateButtons();
+      this.startProgressUpdate();
+      this.card.classList.add('playing');
+    }
+
+    pause() {
+      if (!this.isPlaying || this.isPaused) return;
+      const ctx = getAudioContext();
+      if (!ctx || !this.source) return;
+
+      this.pausedTime = ctx.currentTime - this.startTime;
+      this.source.stop();
+      this.source.disconnect();
+      this.source = null;
+      this.isPlaying = false;
+      this.isPaused = true;
+      this.updateButtons();
+      this.stopProgressUpdate();
+      this.card.classList.remove('playing');
+    }
+
+    stop() {
+      if (this.source) {
+        try {
+          this.source.stop();
+          this.source.disconnect();
+        } catch (_) {}
+        this.source = null;
+      }
+      this.isPlaying = false;
+      this.isPaused = false;
+      this.pausedTime = 0;
+      this.updateButtons();
+      this.stopProgressUpdate();
+      this.card.classList.remove('playing');
+      if (this.progressFill) {
+        this.progressFill.style.width = '0%';
+      }
+    }
+
+    updateButtons() {
+      if (!this.playBtn || !this.pauseBtn || !this.stopBtn) return;
+      
+      this.playBtn.disabled = this.isPlaying && !this.isPaused;
+      this.pauseBtn.disabled = !this.isPlaying || this.isPaused;
+      this.stopBtn.disabled = !this.isPlaying && !this.isPaused;
+      
+      this.playBtn.classList.toggle('active', this.isPaused);
+      this.pauseBtn.classList.toggle('active', this.isPlaying && !this.isPaused);
+    }
+
+    startProgressUpdate() {
+      this.stopProgressUpdate();
+      this.updateProgress();
+    }
+
+    updateProgress() {
+      if (!this.isPlaying || this.isPaused) return;
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      
+      const elapsed = ctx.currentTime - this.startTime;
+      const duration = this.buffer.duration;
+      const percent = Math.min((elapsed / duration) * 100, 100);
+      
+      if (this.progressFill) {
+        this.progressFill.style.width = percent + '%';
+      }
+      
+      if (percent < 100) {
+        this.animationFrame = requestAnimationFrame(() => this.updateProgress());
+      } else {
+        this.stopProgressUpdate();
+      }
+    }
+
+    stopProgressUpdate() {
+      if (this.animationFrame) {
+        cancelAnimationFrame(this.animationFrame);
+        this.animationFrame = null;
+      }
+    }
+
+    getDuration() {
+      return this.buffer ? this.buffer.duration : 0;
+    }
   }
 
-  // ---- build the grid ----
+  // ---- Build the grid ----
   function buildGrid() {
     const grid = document.getElementById('soundGrid');
     grid.innerHTML = '';
+    
     soundDefinitions.forEach((def, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'sound-btn';
-      btn.dataset.index = idx;
-      btn.innerHTML = `<span class="emoji">${def.emoji}</span><span class="label">${def.label}</span>`;
-      btn.addEventListener('click', () => {
-        playSound(idx);
+      const sound = new SoundInstance(idx);
+      soundInstances.push(sound);
+
+      const card = document.createElement('div');
+      card.className = 'sound-card';
+      card.innerHTML = `
+        <div class="emoji">${def.emoji}</div>
+        <div class="label">${def.label}</div>
+        <div class="controls-row">
+          <button class="play-btn" title="Play">▶</button>
+          <button class="pause-btn" title="Pause" disabled>⏸</button>
+          <button class="stop-btn" title="Stop" disabled>⏹</button>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+      `;
+
+      const playBtn = card.querySelector('.play-btn');
+      const pauseBtn = card.querySelector('.pause-btn');
+      const stopBtn = card.querySelector('.stop-btn');
+      const progressFill = card.querySelector('.progress-fill');
+
+      sound.setUI(card, progressFill, playBtn, pauseBtn, stopBtn);
+
+      playBtn.addEventListener('click', () => {
+        getAudioContext();
+        sound.play();
       });
-      grid.appendChild(btn);
+
+      pauseBtn.addEventListener('click', () => {
+        sound.pause();
+      });
+
+      stopBtn.addEventListener('click', () => {
+        sound.stop();
+      });
+
+      grid.appendChild(card);
     });
   }
 
-  // ---- initialize controls ----
+  // ---- Stop all sounds ----
+  function stopAllSounds() {
+    soundInstances.forEach(sound => sound.stop());
+  }
+
+  // ---- Init controls ----
   function initControls() {
     const volumeSlider = document.getElementById('volumeSlider');
     const volumeDisplay = document.getElementById('volumeDisplay');
 
-    // update volume
     function updateVolume() {
       const val = parseFloat(volumeSlider.value);
       if (masterGain) {
@@ -245,25 +405,18 @@
     }
 
     volumeSlider.addEventListener('input', updateVolume);
-    // set initial display
     updateVolume();
 
-    // stop all button
     document.getElementById('stopAllBtn').addEventListener('click', stopAllSounds);
 
-    // optional: resume audio context on first user interaction (handled in play)
-    // but also resume on any click to the board
     document.querySelector('.soundboard').addEventListener('click', () => {
       if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
-    }, { once: false });
+    });
   }
 
-  // ---- start ----
+  // ---- Start ----
   buildGrid();
   initControls();
-
-  // ensure audio context can be resumed on first sound play (if autoplay blocked)
-  // already handled inside playSound via getAudioContext
 })();
