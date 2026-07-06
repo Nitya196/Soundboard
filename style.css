@@ -16,7 +16,7 @@ body {
 }
 
 .soundboard {
-  max-width: 900px;
+  max-width: 950px;
   width: 100%;
   background: rgba(22, 26, 40, 0.8);
   backdrop-filter: blur(6px);
@@ -50,7 +50,7 @@ h1 {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 1rem;
   margin-bottom: 2.2rem;
 }
@@ -64,18 +64,20 @@ h1 {
   flex-direction: column;
   align-items: center;
   gap: 0.4rem;
-  transition: all 0.1s ease;
+  transition: all 0.15s ease;
+  position: relative;
 }
 
 .sound-card .label {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #eef2ff;
   letter-spacing: 0.3px;
+  text-align: center;
 }
 
 .sound-card .emoji {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   line-height: 1.2;
   filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
 }
@@ -92,7 +94,7 @@ h1 {
   border-radius: 50%;
   width: 34px;
   height: 34px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #eef2ff;
   cursor: pointer;
   transition: all 0.1s ease;
@@ -108,12 +110,12 @@ h1 {
   box-shadow: 0 0px 0 #1a1e2c;
 }
 
-.sound-card .controls-row button:hover {
+.sound-card .controls-row button:hover:not(:disabled) {
   background: #5b6c9c;
 }
 
 .sound-card .controls-row button:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   transform: translateY(3px);
   box-shadow: 0 0px 0 #1a1e2c;
   cursor: not-allowed;
@@ -138,19 +140,20 @@ h1 {
 
 .sound-card .progress-bar {
   width: 100%;
-  height: 4px;
+  height: 5px;
   background: #1a1e2c;
   border-radius: 4px;
   overflow: hidden;
   margin-top: 0.2rem;
+  position: relative;
 }
 
 .sound-card .progress-bar .progress-fill {
   height: 100%;
   width: 0%;
-  background: #b7c9ff;
+  background: linear-gradient(90deg, #b7c9ff, #6d8cff);
   border-radius: 4px;
-  transition: width 0.1s linear;
+  transition: width 0.05s linear;
 }
 
 /* Controls row: volume + stop */
@@ -260,16 +263,16 @@ input[type="range"]::-moz-range-thumb {
     padding: 1.5rem 1rem;
   }
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 0.7rem;
   }
   .sound-card {
     padding: 0.6rem 0.4rem;
   }
   .sound-card .controls-row button {
-    width: 28px;
-    height: 28px;
-    font-size: 0.7rem;
+    width: 30px;
+    height: 30px;
+    font-size: 0.75rem;
   }
   .controls {
     flex-direction: column;
@@ -284,4 +287,4 @@ input[type="range"]::-moz-range-thumb {
     width: 100%;
     text-align: center;
   }
-  }
+}
